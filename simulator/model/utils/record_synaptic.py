@@ -73,21 +73,15 @@ def record_synaptic_currents(model):
     """
     AMPA, AMPA_segments = measure_AMPA_current(model)
     NMDA, NMDA_segments = measure_NMDA_current(model)
-    GABA, GABA_segments = measure_GABA_current(model)
-    GABA_B, GABA_B_segments = measure_GABA_B_current(model)
 
     synaptic_currents = {
         'AMPA': AMPA,
-        'NMDA': NMDA,
-        'GABA': GABA,
-        'GABA_B': GABA_B
+        'NMDA': NMDA
     }
 
     synaptic_segments = {
         'AMPA': AMPA_segments,
-        'NMDA': NMDA_segments,
-        'GABA': GABA_segments,
-        'GABA_B': GABA_B_segments
+        'NMDA': NMDA_segments
     }
 
     return synaptic_segments, synaptic_currents

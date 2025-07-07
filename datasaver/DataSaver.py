@@ -9,7 +9,7 @@ class DataSaver:
     Args:
         columns_in_chunk (int): Number of columns per chunk when saving data.
     """
-    def __init__(self, columns_in_chunk: int) -> None:
+    def __init__(self, columns_in_chunk) -> None:
         self.columns_in_chunk = columns_in_chunk
 
     def save_in_chunks(self, data: pd.DataFrame, output: str, data_name: str = 'data') -> None:
