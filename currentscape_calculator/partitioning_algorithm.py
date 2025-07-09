@@ -256,7 +256,7 @@ def create_region_specific_index(df: pd.DataFrame, input_dir: str) -> pd.DataFra
     # Create a dictionary with each region's file contents split by newline
     regions_dict = {}
     for f in fnames_regions:
-        with open(os.path.join(input_dir[0], f + '.txt'), 'r') as file:
+        with open(os.path.join(input_dir, f + '.txt'), 'r') as file:
             contents = file.read().strip()  # Read the file and strip leading/trailing whitespace
             segments = contents.split('\n')  # Split the contents by newline
             key = os.path.splitext(f)[0]  # Use the file name (without extension) as the key

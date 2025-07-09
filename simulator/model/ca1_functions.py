@@ -133,9 +133,9 @@ def init_activeCA1(model):
     # Adding Ca and K_slow conductances
     for sec in h.all_apicals:
         sec.insert('car')
-        sec.gmax_car = 0  # 0.006
+        sec.gmax_car = 0.006  # 0.007
         sec.insert('kslow')
-        sec.gmax_kslow = 0  # 0.001
+        sec.gmax_kslow = 0.001  # 0.003
 
 
 def addClustLocs(model, nsyn, Nclust, Ncell_per_clust, seed, midle=False, clocs=None, Lmin=60):
@@ -272,7 +272,7 @@ def genClusts(model, Nclust, Ncell_per_clust, minL, seed, clocs=None):
     return locs, clDends
 
 
-def add_syns(model, Elocs):
+def add_syns(model, Elocs, Ilocs):
     model.AMPAlist = []
     model.ncAMPAlist = []
     AMPA_gmax = 0.6 / 1000.  # Set in nS and convert to muS data.Agmax
@@ -304,24 +304,32 @@ def add_syns(model, Elocs):
         model.NMDAlist.append(NMDA)
         model.ncNMDAlist.append(NC)
 
+    model.GABAlist = []
+    model.ncGABAlist = []
+    GABA_gmax = 0.2 / 1000.  # Set in nS and convert to muS data.Igmax 0.1/1000
 
-def genDendLocs(dends=[108], nsyn=30, spread=[0.4, 0.6]):
-    # insert nsyn synapses to dendrites dends, uniform spread within a branch
-    locs = []
-    n_dends = len(dends)
-    if isinstance(nsyn, list):
-        nsyn = np.repeat(nsyn[0], len(dends))
-    else :
-        nsyn = np.repeat(nsyn, len(dends))
-    for i_dend in np.arange(0,n_dends):
-        dend = dends[i_dend]
-        nsyn_dend = nsyn[i_dend]
-        isd = (spread[1]-spread[0])/float(nsyn_dend)
-        pos = np.arange(spread[0], spread[1], isd)[0:nsyn_dend]
+    model.GABA_Blist = []
+    model.ncGABA_Blist = []
+    GABAB_gmax = 0.2 / 1000.  # Set in nS and convert to muS data.Bgmax 0.1/1000
 
-        if (len(pos) != nsyn_dend):
-            # print ('error: synapse number mismatch, stop simulation! dend:', i_dend, 'created=', len(pos), '!=', nsyn_dend)
-            sys.exit(1)
-        for p in pos:
-            locs.append([dend, p])
-    return locs
+    for loc in Ilocs:
+        locInd = int(loc[0])
+        if (locInd == -1):
+            synloc = model.soma
+        else:
+            synloc = model.dends[int(loc[0])]
+        GABA = h.Exp2Syn(float(loc[1]), sec=synloc)
+        GABA.tau1 = 0.1  # data.Itau1
+        GABA.tau2 = 4  # data.Itau2
+        GABA.e = -65  # data.Irev
+        NC = h.NetCon(h.nil, GABA, 0, 0, GABA_gmax)
+        model.GABAlist.append(GABA)
+        model.ncGABAlist.append(NC)
+
+        GABAB = h.Exp2Syn(float(loc[1]), sec=synloc)
+        GABAB.tau1 = 1  # data.Btau1
+        GABAB.tau2 = 40  # data.Btau2
+        GABAB.e = -80  # data.Brev
+        NC = h.NetCon(h.nil, GABAB, 0, 0, GABAB_gmax)
+        model.GABA_Blist.append(GABAB)
+        model.ncGABA_Blist.append(NC)

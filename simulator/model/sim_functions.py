@@ -2,58 +2,41 @@ import numpy as np
 
 import simulator.model.simulation as simulation
 from numpy import loadtxt
-####################### Dendritic integration #######################
 
-def SIM_nsynIteration(model, maxNsyn, tInterval, onset, direction='IN', tstop=300):
-# direction should be either 'OUT' or 'IN' (default)
-#   ---------------------------------------
-#   first each synapse is activated alone
-    It = None
-    simulation_data_single_list = []
-    simulation_data_together_list = []
-    # maxNsyn = sum(maxNsyn)
-    # for nsyn in np.arange(1, maxNsyn+1): # 1 - N
-    for nsyn in np.arange(1, maxNsyn+1):
-        if (direction=='OUT'):
-            etimes = np.array([[nsyn-1, onset * 1000]]) # 0 - N-1
-        else:
-            etimes = np.array([[maxNsyn - nsyn, onset * 1000]]) # N-1 - 0
-        fih = simulation.h.FInitializeHandler(1, lambda: initSpikes_dend(model, etimes))
+def sim_PlaceInput(model, Insyn, Irate, e_fname, i_fname, tstop, elimIspike=0): #sim_time in msec
+    eitimes = readTrain(e_fname, i_fname)
 
-        # def simulate(model, t_stop=100, NMDA=False, recDend=False, i_recDend=11, x_recDend=0.5, spines=False, i_recSpine=11):
-        sim_data = simulation.simulate(model, tstop)
-        sim_data['etimes'] = etimes
-        simulation_data_single_list.append(sim_data)
+    if ((Insyn > 0) & (Irate > 0)) :
+        etimes = eitimes[0]
+        itimes = eitimes[1]
+        if (elimIspike > 0):
+            N_ispikes = len(itimes)
+            i_index = np.sort(np.random.choice(N_ispikes, int(round((1-elimIspike) * N_ispikes)), replace=False))
+            itimes = itimes[i_index]
 
-#   ---------------------------------------
-#   next, synapses are activated together
-#     for nsyn in np.arange(1, maxNsyn+1):
-    for nsyn in [8, 10, 15, 20]:
-        etimes = genDSinput(nsyn, maxNsyn, tInterval, onset * 1000, direction)
-        fih = simulation.h.FInitializeHandler(1, lambda: initSpikes_dend(model, etimes))
-        sim_data = simulation.simulate(model, tstop)
-        sim_data['etimes'] = etimes
-        simulation_data_together_list.append(sim_data)
+    # Run
+    fih = simulation.h.FInitializeHandler(1, lambda: initSpikes(model, etimes, itimes))
+    simulation_data = simulation.simulate(model, tstop)
+    return  simulation_data
 
-    return  simulation_data_single_list, simulation_data_together_list
-
-
-def initSpikes_dend(model, etimes):
+def initSpikes(model, etimes, itimes):
     if (len(etimes)>0):
         for s in etimes:
             model.ncAMPAlist[int(s[0])].event(float(s[1]))
             model.ncNMDAlist[int(s[0])].event(float(s[1]))
 
+    if (len(itimes)>0):
+        for s in itimes:
+            model.ncGABAlist[int(s[0])].event(float(s[1]))
+            model.ncGABA_Blist[int(s[0])].event(float(s[1]))
 
-def genDSinput(nsyn, Nmax, tInterval, onset, direction='OUT'):
-    ## a single train with nsyn inputs - either in the in or in the out direction
-    times = np.zeros([nsyn, 2])
-    if (direction=='OUT'):
-        times[:,0] = np.arange(0, nsyn)
-    else:
-        times[:,0] = np.arange(Nmax-1, Nmax-nsyn-1, -1)
-    # # print(times)
-    # tt = np.arange(0, nsyn*tInterval, tInterval) + onset
-    # # print(tt)
-    times[:,1] = np.arange(0, nsyn*tInterval, tInterval)[0:nsyn] + onset
+def readTrain(e_fname, i_fname):
+    fname = e_fname
+    Etimes = loadtxt(fname, comments="#", delimiter=" ", unpack=False)
+
+    fname = i_fname
+    Itimes = loadtxt(fname, comments="#", delimiter=" ", unpack=False)
+
+    times = [Etimes, Itimes]
     return times
+
